@@ -19,7 +19,7 @@ function App() {
   const [fieldsModal, setFieldsModal] = useState(undefined);
 
   let web3 = new Web3(Web3.givenProvider);
-  const hasMetamask = () => {
+  const hasMetamask = useCallback(() => {
     const provider = web3.currentProvider;
     if (provider && provider === window.ethereum && provider.isMetaMask) {
       console.log("MetaMask is installed!");
@@ -27,7 +27,7 @@ function App() {
     } else {
       return false;
     }
-  };
+  },[web3.currentProvider ]);
 
   /*
   const handlerClik =  useCallback(async(e) => {
@@ -60,8 +60,9 @@ function App() {
   const handlerClik = useCallback(async (e) => {
     e.preventDefault();
     if (hasMetamask()) {
+      console.log(window.ethereum.enable)
       const accounts = await web3.eth.getAccounts()
-
+      console.log(accounts);
       // equivalente di web3.eth.personal.sign
       // web3.eth.personal.sign chiama questa fx
       window.ethereum.sendAsync(

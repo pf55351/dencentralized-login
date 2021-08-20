@@ -12,6 +12,9 @@ import Footer from "react-bulma-components/cjs/components/footer";
 import logo from "./metamask.svg";
 import Web3 from "web3";
 import Modal from "./Modal";
+import { detect } from "detect-browser";
+import { messages } from "./Utils";
+import { getNonce, login } from "./AuthService";
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +30,7 @@ function App() {
     } else {
       return false;
     }
-  },[web3.currentProvider ]);
+  }, [web3.currentProvider]);
 
   /*
   const handlerClik =  useCallback(async(e) => {
@@ -57,42 +60,78 @@ function App() {
   }, []);
   */
 
-  const handlerClik = useCallback(async (e) => {
-    e.preventDefault();
-    if (hasMetamask()) {
-      console.log(window.ethereum.enable)
-      const accounts = await web3.eth.getAccounts()
-      console.log(accounts);
-      // equivalente di web3.eth.personal.sign
-      // web3.eth.personal.sign chiama questa fx
-      window.ethereum.sendAsync(
-        {
-          method: 'personal_sign',
-          params: [web3.utils.utf8ToHex('Hello world'), accounts[0]],
-          from: accounts[0]
-        },
-        (_err, { result }) => (_err ? console.error(_err) : console.log(result))
-      )
-
-      /*web3.eth.personal
-        .sign(
-          web3.utils.utf8ToHex("Hello world"),
-          accounts[0]
-        )
-        .then(console.log);*/
-    } else {
-      setFieldsModal({
-        success: "false",
-        danger: "true",
-        title: "No Metamask Extension Founded",
-        body: "Please install Metamask extension",
-        show: "true",
-        btnType: "danger",
-      });
+  const isSupportedBroswer = () => {
+    const browser = detect().name;
+    switch (browser) {
+      case "safari":
+        return false;
+      default:
+        return true;
     }
-  }, [hasMetamask, web3.eth, web3.utils]);
+  };
 
-  console.log("A", fieldsModal);
+  const handlerClik = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setIsLoading(true);
+      if (hasMetamask()) {
+        await web3.currentProvider.request({ method: "eth_requestAccounts" });
+        const accounts = await web3.eth.getAccounts();
+        console.log(accounts);
+        const account = accounts[0];
+        setEthAddress(account);
+        getNonce({ address: account })
+          .then((res) => {
+            setIsLoading(false);
+            console.log(res);
+            if (res.status === 200) {
+              const { nonce, welcomeMsg } = res.data;
+              const msg = `${welcomeMsg}${nonce}`;
+              web3.eth.personal
+                .sign(web3.utils.utf8ToHex(msg), account)
+                .then((res) => login({res, nonce, msg}))
+                .then(console.log);
+            }
+          })
+          .then()
+          .catch((err) => {
+            console.log(err.response);
+            setIsLoading(false);
+            setFieldsModal({
+              success: "false",
+              danger: "true",
+              title: messages.NO_VALID_ADDRESS_TITLE,
+              body: err.response.data.message,
+              show: "true",
+              btnType: "danger",
+            });
+          });
+
+        // equivalente di web3.eth.personal.sign
+        // web3.eth.personal.sign chiama questa fx
+        // window.ethereum.sendAsync(
+        //   {
+        //     method: 'personal_sign',
+        //     params: [web3.utils.utf8ToHex('Hello world'), accounts[0]],
+        //     from: accounts[0]
+        //   },
+        //   (_err, { result }) => (_err ? console.error(_err) : console.log(result))
+        // )
+      } else {
+        setFieldsModal({
+          success: "false",
+          danger: "true",
+          title: messages.METAMASK_NOT_FOUNDED,
+          body: isSupportedBroswer()
+            ? messages.INSTALL_METAMASK_BODY
+            : messages.METAMASK_NOT_SUPPORTED_BODY,
+          show: "true",
+          btnType: "danger",
+        });
+      }
+    },
+    [hasMetamask, web3.utils, web3.eth, web3.currentProvider]
+  );
 
   return (
     <div>
@@ -116,7 +155,7 @@ function App() {
           </Container>
         </Hero.Header>
         <Hero.Body>
-          <Container display="flex" justifyContent="center" alignItems="center">
+          <Container display="flex" justifyContent="center" alignItems="center" flexDirection="column">
             <Content>
               <Button
                 size="medium"
@@ -127,6 +166,19 @@ function App() {
                 onClick={handlerClik}
               >
                 Login with MetaMask
+              </Button>
+            </Content>
+            <Content>
+              <Button
+                size="medium"
+                loading={isLoading}
+                rounded="true"
+                fullwidth="true"
+                color="white-ter"
+                onClick={handlerClik}
+                style={{width:250}}
+              >
+                Logout
               </Button>
             </Content>
           </Container>

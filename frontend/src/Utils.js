@@ -10,4 +10,6 @@ export const messages = {
   METAMASK_NOT_SUPPORTED_BODY:"This broswer not supported Metamask extension.<br>Please use Chrome or Firefox",
   INSTALL_METAMASK_BODY:"Please install Metamask extension",
   NO_VALID_ADDRESS_TITLE:"Ethereum Address Error",
+  NO_VALID_SIGN_TITLE:"Sign Error",
+  LOGIN_SUCCESS_TITLE:"Sign verification ok"
 }

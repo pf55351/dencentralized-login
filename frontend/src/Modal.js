@@ -25,7 +25,7 @@ function Modal({ fieldsModal, setFieldsModal }) {
         onConfirm={() => {}}
       >
         <Content>
-          <p>{fieldsModal.body}</p>
+          <p><b>{fieldsModal.body}</b></p>
           <Button
             onClick={handlerClick}
             fullwidth={true}

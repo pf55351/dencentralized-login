@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String },
   dataInsert: { type: Date, default: Date.now() },
   dataUpdate: { type: Date },
+  userConnected: { type: Boolean, default: false ,required:true},
 });
 
 module.exports = userSchema;

@@ -14,51 +14,28 @@ import Web3 from "web3";
 import Modal from "./Modal";
 import { detect } from "detect-browser";
 import { messages } from "./Utils";
-import { getNonce, login } from "./AuthService";
+import { getNonce, login, logout } from "./AuthService";
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [ethAddress, setEthAddress] = useState("");
+  const [userLogged, setUserLogged] = useState(false);
   const [fieldsModal, setFieldsModal] = useState(undefined);
 
   let web3 = new Web3(Web3.givenProvider);
   const hasMetamask = useCallback(() => {
     const provider = web3.currentProvider;
-    if (provider && provider === window.ethereum && provider.isMetaMask) {
+    if (
+      provider &&
+      provider === window.ethereum &&
+      window.ethereum.isMetaMask
+    ) {
       console.log("MetaMask is installed!");
       return true;
     } else {
       return false;
     }
   }, [web3.currentProvider]);
-
-  /*
-  const handlerClik =  useCallback(async(e) => {
-    e.preventDefault();
-    if (hasMetamask()) {
-      console.log("OK METAMASK");
-      console.log(web3.eth.accounts[0]);
-      const accounts = await web3.eth.getAccounts()
-      console.log(accounts[0])
-      web3.eth.personal
-        .sign(
-          web3.utils.utf8ToHex("Hello world"),
-          "0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe",
-          "test password!"
-        )
-        .then(console.log);
-    } else {
-      setFieldsModal({
-        success: "false",
-        danger: "true",
-        title: "No Metamask Extension Founded",
-        body: "Please install Metamask extension",
-        show: "true",
-        btnType: "danger",
-      });
-    }
-  }, []);
-  */
 
   const isSupportedBroswer = () => {
     const browser = detect().name;
@@ -70,27 +47,65 @@ function App() {
     }
   };
 
-  const handlerClik = useCallback(
+  const handlerClikLogout = () => {
+    setIsLoading(true);
+    setUserLogged(false);
+    setEthAddress("");
+    setFieldsModal(undefined);
+    logout({address:ethAddress}).then(setIsLoading(false))
+
+  };
+  const handlerClikLogin = useCallback(
     async (e) => {
       e.preventDefault();
       setIsLoading(true);
       if (hasMetamask()) {
-        await web3.currentProvider.request({ method: "eth_requestAccounts" });
-        const accounts = await web3.eth.getAccounts();
-        console.log(accounts);
+        await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+        const accounts = await window.ethereum.request({
+          method: "eth_accounts",
+        });
+        //const accounts = await web3.eth.getAccounts();
         const account = accounts[0];
         setEthAddress(account);
         getNonce({ address: account })
           .then((res) => {
-            setIsLoading(false);
             console.log(res);
             if (res.status === 200) {
               const { nonce, welcomeMsg } = res.data;
               const msg = `${welcomeMsg}${nonce}`;
               web3.eth.personal
                 .sign(web3.utils.utf8ToHex(msg), account)
-                .then((res) => login({res, nonce, msg}))
-                .then(console.log);
+                .then((res) => login({ res, nonce, msg }))
+                .then((res) => {
+                  setIsLoading(false);
+                  if (res.status === 200) {
+                    setFieldsModal({
+                      success: "true",
+                      danger: "false",
+                      title: messages.LOGIN_SUCCESS_TITLE,
+                      body: res.data.message,
+                      show: "true",
+                      btnType: "success",
+                    });
+                    setUserLogged(true);
+                  }
+                })
+                .catch((err) => {
+                  setIsLoading(false);
+
+                  setFieldsModal({
+                    success: "false",
+                    danger: "true",
+                    title: messages.NO_VALID_SIGN_TITLE,
+                    body: err.response
+                      ? err.response.data.message
+                      : err.message,
+                    show: "true",
+                    btnType: "danger",
+                  });
+                });
             }
           })
           .then()
@@ -130,7 +145,7 @@ function App() {
         });
       }
     },
-    [hasMetamask, web3.utils, web3.eth, web3.currentProvider]
+    [hasMetamask, web3.utils, web3.eth]
   );
 
   return (
@@ -155,32 +170,49 @@ function App() {
           </Container>
         </Hero.Header>
         <Hero.Body>
-          <Container display="flex" justifyContent="center" alignItems="center" flexDirection="column">
-            <Content>
-              <Button
-                size="medium"
-                loading={isLoading}
-                rounded="true"
-                fullwidth="true"
-                color="warning"
-                onClick={handlerClik}
+          <Container
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            flexDirection="column"
+          >
+            {userLogged === false ? (
+              <Content>
+                <Button
+                  size="medium"
+                  loading={isLoading}
+                  rounded="true"
+                  fullwidth="true"
+                  color="warning"
+                  onClick={handlerClikLogin}
+                >
+                  Login with MetaMask
+                </Button>
+              </Content>
+            ) : (
+              <Content
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                flexDirection="column"
               >
-                Login with MetaMask
-              </Button>
-            </Content>
-            <Content>
-              <Button
-                size="medium"
-                loading={isLoading}
-                rounded="true"
-                fullwidth="true"
-                color="white-ter"
-                onClick={handlerClik}
-                style={{width:250}}
-              >
-                Logout
-              </Button>
-            </Content>
+                <Heading>Congratulation {ethAddress}</Heading>
+                <Heading textColor="grey" subtitle size={3}>
+                  You are logged correctly with MetaMask
+                </Heading>
+                <Button
+                  size="medium"
+                  loading={isLoading}
+                  rounded="true"
+                  fullwidth="true"
+                  color="white-ter"
+                  onClick={handlerClikLogout}
+                  style={{ width: 250 }}
+                >
+                  Logout
+                </Button>
+              </Content>
+            )}
           </Container>
         </Hero.Body>
         <Hero.Footer>

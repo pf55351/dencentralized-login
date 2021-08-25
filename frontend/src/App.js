@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import "bulma/css/bulma.min.css";
 import {
   Container,
@@ -15,6 +15,7 @@ import Modal from "./Modal";
 import { detect } from "detect-browser";
 import { messages } from "./Utils";
 import { getNonce, login, logout } from "./AuthService";
+import { isMobile } from "react-device-detect";
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +24,7 @@ function App() {
   const [fieldsModal, setFieldsModal] = useState(undefined);
 
   let web3 = new Web3(Web3.givenProvider);
+
   const hasMetamask = useCallback(() => {
     const provider = web3.currentProvider;
     if (
@@ -52,8 +54,7 @@ function App() {
     setUserLogged(false);
     setEthAddress("");
     setFieldsModal(undefined);
-    logout({address:ethAddress}).then(setIsLoading(false))
-
+    logout({ address: ethAddress }).then(setIsLoading(false));
   };
   const handlerClikLogin = useCallback(
     async (e) => {
@@ -133,11 +134,14 @@ function App() {
         //   (_err, { result }) => (_err ? console.error(_err) : console.log(result))
         // )
       } else {
+        setIsLoading(false);
         setFieldsModal({
           success: "false",
           danger: "true",
           title: messages.METAMASK_NOT_FOUNDED,
-          body: isSupportedBroswer()
+          body: isMobile
+            ? messages.DEVICE_NOT_SUPPORTED
+            : isSupportedBroswer()
             ? messages.INSTALL_METAMASK_BODY
             : messages.METAMASK_NOT_SUPPORTED_BODY,
           show: "true",

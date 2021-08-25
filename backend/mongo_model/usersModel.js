@@ -6,19 +6,18 @@ const userModel = moongose.model("User", usersSchema);
 
 const insertNewUser = async (address) => {
   const nonce = generateNonce();
-  userModel.create({ address, nonce }, function (err, user) {
-    if (err) console.log(err);
-    else {
-      console.log("user insert ok", user);
-      return nonce;
-    }
-  });
+  const user = await userModel.create({ address, nonce });
+  if (user) {
+    return nonce;
+  } else {
+    return user;
+  }
 };
 
 const userExists = async (address) => {
   let nonce = "";
   const user = await userModel.findOne({ address });
-  console.log(user);
+  console.log("User found: ", user);
   if (user) {
     nonce = await updateNonce(user.address);
   } else {
@@ -38,7 +37,6 @@ const updateNonce = async (address) => {
 
 const getAddressFromNonce = async (nonce) => {
   const filter = { nonce };
-  console.log(filter);
   const { address } = await userModel.findOne(filter);
   console.log("Address from nonce %s is %s", nonce, address);
   return address;

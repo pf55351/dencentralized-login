@@ -7,15 +7,16 @@ const mongoUrl  = process.env.MONGO_URL;
 const mongoDB   = process.env.MONGO_DATABASE;
 
 mongoose.connect(
-  `mongodb+srv://${mongoUser}:${mongoPass}@${mongoUrl}/${mongoDB}`,
+  `mongodb://${mongoUser}:${mongoPass}@${mongoUrl}:27017`,
   {
+    dbName:'metamask',
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: false,
     useCreateIndex: true,
   }
 );
-
+//mongoose
 mongoose.connection.on("error", function (ref) {
   console.log(ref);
 });

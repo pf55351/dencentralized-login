@@ -1,17 +1,16 @@
-const {
-  userExists,
-  getAddressFromNonce,
-  updateStatus,
-} = require("../mongo_model/usersModel");
+const { insertOrUpdateUserStatus } = require("../mongo_model/usersModel");
 const web3 = require("web3");
 const ethUtil = require("eth-sig-util");
 const messages = require("../messages");
+const { v4: uuidv4 } = require("uuid");
+const {get,set} = require("../redis");
 
 const getNonce = async (address) => {
   let res = {};
   const isEthAddress = web3.utils.isAddress(address);
   if (isEthAddress) {
-    const nonce = await userExists(address.toLowerCase());
+    const nonce = uuidv4();
+    await set(nonce, address);
     res.status = 200;
     res.nonce = nonce;
     res.welcomeMsg = messages.WELCOME_MSG;
@@ -29,9 +28,9 @@ const verifySign = async (sig, nonce, msg) => {
     sig,
   };
   const addressSigner = ethUtil.recoverPersonalSignature(msgParams);
-  const address = await getAddressFromNonce(nonce);
+  const address = await get(nonce);
   if (address.toLowerCase() === addressSigner.toLowerCase()) {
-    await updateStatus(address,true);
+    await insertOrUpdateUserStatus(address, true);
     res.status = 200;
     res.message = messages.LOGIN_SUCCESS;
   } else {
@@ -41,13 +40,13 @@ const verifySign = async (sig, nonce, msg) => {
   return res;
 };
 
+const logout = async (address) => {
+  try {
+    await insertOrUpdateUserStatus(address, false);
+    return { status: 200 };
+  } catch (_err) {
+    console.error(_err);
+  }
+};
 
-const logout = async address =>{
-  let res = {}
-  await updateStatus(address,false);
-  console.log("logout ok")
-  res.status=200;
-  return res;
-}
-
-module.exports = { getNonce, verifySign,logout };
+module.exports = { getNonce, verifySign, logout };

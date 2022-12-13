@@ -4,7 +4,6 @@ import "bulma/css/bulma.min.css";
 import { Content, Button } from "react-bulma-components";
 
 function Modal({ fieldsModal, setFieldsModal }) {
-  console.log(fieldsModal);
   const { show } = fieldsModal;
   const [showModal, setShowModal] = useState(show);
 

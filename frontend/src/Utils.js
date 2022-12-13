@@ -4,7 +4,6 @@ export const broswerName = {
   FIREFOX: "firefox",
 };
 
-
 export const messages = {
   METAMASK_NOT_FOUNDED:"No Metamask Extension Founded",
   METAMASK_NOT_SUPPORTED_BODY:"This broswer not supported Metamask extension.\nPlease use Chrome or Firefox",
